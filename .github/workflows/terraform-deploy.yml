@@ -101,4 +101,4 @@ jobs:
       # 8. Apply the Code (Only runs when code is pushed/merged to the main branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false        gh auth login
