@@ -11,11 +11,11 @@ terraform {
 
 provider "azurerm" {
   features {}
-  use_oidc = true 
+  use_oidc = true
 }
 
 resource "azurerm_resource_group" "dev_rg" {
-  name     =  "dev_rg"
+  name     = "dev_rg"
   location = "spaincentral"
 }
 
@@ -26,7 +26,7 @@ resource "azurerm_resource_group" "dev_rg" {
 #   storage_account_name  = "devstorageacct2334"
 #     tags                  = {
 #     environment = "dev"
-    
+
 #   }
 # }
 
