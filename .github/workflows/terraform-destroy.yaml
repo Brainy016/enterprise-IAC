@@ -1,0 +1,63 @@
+name: 'Enterprise Terraform Destroy'
+
+# The workflow_dispatch trigger creates a manual button in the GitHub UI
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm teardown'
+        required: true
+        default: 'cancel'
+
+# We still need OIDC permissions to log into Azure safely
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Using the exact same secrets from your deploy pipeline
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: true
+  TF_WORKING_DIR: './environment/dev'
+
+jobs:
+  destroy:
+    name: 'Teardown Infrastructure'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      # 0. Safety Check: Ensure the user actually typed DESTROY
+      - name: Verify Confirmation
+        if: github.event.inputs.confirm_destroy != 'DESTROY'
+        run: |
+          echo "Destruction cancelled. You must type DESTROY exactly."
+          exit 1
+
+      # 1. Pull down your code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 3. Log into Azure via OIDC
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 4. Initialize the connection to your Remote State
+      - name: Terraform Init
+        run: terraform init
+
+      # 5. DESTROY the infrastructure
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve -input=false
